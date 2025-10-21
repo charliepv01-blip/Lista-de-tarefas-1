@@ -2,88 +2,123 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
-import os # Importar para usar variáveis de ambiente (se necessário, mas vamos usar st.secrets)
+import os 
 
-# --- 1. CONFIGURAÇÃO DA CONEXÃO COM SUPABASE ---
+# --- CONFIGURAÇÃO DA CONEXÃO COM SUPABASE ---
 
 # Pega as credenciais do Supabase de st.secrets
-# Nota: Você precisará configurar estas secrets no Streamlit Cloud
-# (no painel de configurações do seu app)
+# st.cache_resource garante que a conexão só seja inicializada uma vez.
 @st.cache_resource
 def init_connection():
-    # As credenciais são lidas automaticamente do arquivo .streamlit/secrets.toml
-    # que você deve configurar no Streamlit Cloud.
-    # Exemplo:
-    # [supabase]
-    # url = "SUA_URL_SUPABASE"
-    # key = "SUA_CHAVE_SUPABASE"
     try:
+        # Credenciais lidas do secrets.toml (local) ou Secrets (Streamlit Cloud)
         url: str = st.secrets["supabase"]["url"]
         key: str = st.secrets["supabase"]["key"]
         
-        # Cria e retorna o cliente Supabase
         supabase: Client = create_client(url, key)
         return supabase
     except KeyError:
-        st.error("Erro de configuração: As credenciais do Supabase (url e key) não foram encontradas no arquivo secrets.toml.")
+        st.error("Erro de configuração: As credenciais do Supabase (url e key) não foram encontradas.")
         return None
     except Exception as e:
         st.error(f"Erro ao inicializar a conexão com Supabase: {e}")
         return None
 
-# Inicializa o cliente Supabase
 supabase = init_connection()
 
-# --- 2. FUNÇÃO PARA BUSCAR DADOS ---
-
-# Usa st.cache_data para evitar múltiplas chamadas ao banco de dados
-# O tempo de cache é de 10 minutos (600 segundos)
+# --- FUNÇÃO EXEMPLO PARA BUSCAR DADOS ---
+# Usada para demonstração ou desenvolvimento inicial
 @st.cache_data(ttl=600)
 def fetch_data(table_name: str):
     if supabase is None:
-        return pd.DataFrame() # Retorna DataFrame vazio se a conexão falhou
+        return pd.DataFrame()
         
     try:
-        # Busca todos os dados da tabela
         response = supabase.table(table_name).select("*").execute()
         
-        # Verifica se houve erro na resposta
         if response.data is None:
              st.warning(f"Nenhum dado encontrado na tabela '{table_name}'.")
              return pd.DataFrame()
 
-        # Converte a lista de dicionários para um DataFrame do Pandas
         df = pd.DataFrame(response.data)
         return df
     except Exception as e:
         st.error(f"Erro ao buscar dados da tabela '{table_name}': {e}")
-        st.warning("Verifique se o nome da tabela e as permissões RLS no Supabase estão corretas.")
+        st.warning("Verifique o nome da tabela e permissões RLS no Supabase.")
         return pd.DataFrame()
 
-# --- 3. INTERFACE DO STREAMLIT ---
 
-st.title("Web App Streamlit + Supabase")
-st.subheader("Exemplo de Conexão com PostgreSQL via Supabase")
+# --- FUNÇÕES DAS PÁGINAS (AS SEÇÕES DO SEU MENU) ---
 
-# Nome da sua tabela no Supabase (MUDE ESTE NOME)
-TABLE_NAME = "seus_dados_aqui" 
+def show_tarefas():
+    st.title("📋 Tarefas Principais")
+    st.markdown("Aqui você pode criar, visualizar, editar e concluir suas tarefas.")
+    st.info("Esta seção fará o CRUD (Criar, Ler, Atualizar, Deletar) na tabela principal de tarefas do Supabase.")
+    # PRÓXIMA IMPLEMENTAÇÃO: Lógica para Tarefas
 
-# Botão para carregar/recarregar os dados
-if st.button(f"Carregar Dados da Tabela '{TABLE_NAME}'"):
-    with st.spinner("Carregando dados..."):
-        data_df = fetch_data(TABLE_NAME)
+def show_subtarefas():
+    st.title("📌 Subtarefas")
+    st.markdown("Gerencie os passos menores necessários para completar suas tarefas principais.")
+    st.info("Implementação futura: Lógica para ligar subtarefas a uma Tarefa principal.")
+    # PRÓXIMA IMPLEMENTAÇÃO: Lógica para Subtarefas
 
-        if not data_df.empty:
-            st.success(f"Dados da tabela '{TABLE_NAME}' carregados com sucesso!")
-            st.dataframe(data_df)
-            
-            # Exibe algumas estatísticas
-            st.write(f"Total de linhas: {len(data_df)}")
-        else:
-            st.warning("Não foi possível carregar os dados. Verifique a conexão e o nome da tabela.")
+def show_anotacoes():
+    st.title("📝 Anotações e Ideias")
+    st.markdown("Um bloco de notas simples e pesquisável para salvar informações rapidamente.")
+    st.info("Implementação futura: Salvar notas longas na tabela 'notes' do Supabase.")
+    # PRÓXIMA IMPLEMENTAÇÃO: Lógica para Anotações
 
-# Dica: Sempre exiba o status da conexão ou um placeholder
+def show_agendas():
+    st.title("🗓️ Agendas / Compromissos")
+    st.markdown("Gerencie seus compromissos e horários com datas e horários específicos.")
+    st.info("Esta seção focará em eventos agendados, possivelmente recorrentes.")
+    # PRÓXIMA IMPLEMENTAÇÃO: Lógica para Agendas
+
+def show_calendario_visual():
+    st.title("📆 Calendário Visual")
+    st.markdown("Visualização integrada de Tarefas e Agendas em um formato de calendário interativo.")
+    st.warning("Requer a instalação de uma biblioteca externa de calendário, como `streamlit-calendar`.")
+    # PRÓXIMA IMPLEMENTAÇÃO: Integração visual
+
+def show_lixeira():
+    st.title("🗑️ Lixeira")
+    st.markdown("Recupere ou exclua permanentemente itens excluídos de outras seções (Soft-Delete).")
+    st.info("Esta funcionalidade depende de uma coluna 'is_deleted' nas tabelas do Supabase.")
+    # PRÓXIMA IMPLEMENTAÇÃO: Lógica para Lixeira
+
+# --- LÓGICA DE NAVEGAÇÃO PRINCIPAL ---
+
+# 1. Mapeamento das páginas para as funções
+PAGES = {
+    "Tarefas": show_tarefas,
+    "Subtarefas": show_subtarefas,
+    "Anotações": show_anotacoes,
+    "Agendas": show_agendas,
+    "Calendário Visual": show_calendario_visual,
+    "---": None, # Separador
+    "Lixeira": show_lixeira
+}
+
+# 2. SIDEBAR (MENU)
+st.sidebar.title("Menu Principal")
+
+# Seleção da página usando um radio button na sidebar
+selection = st.sidebar.radio("Navegar", list(PAGES.keys()))
+
+st.sidebar.markdown("---")
+# Exibir status da conexão no sidebar
 if supabase is not None:
-    st.markdown("✅ Conexão com Supabase inicializada.")
+    st.sidebar.success("Supabase Conectado ✅")
 else:
-    st.markdown("❌ Conexão com Supabase pendente ou falhou. Verifique `secrets.toml`.")
+    st.sidebar.error("Supabase Desconectado ❌")
+
+# 3. RENDERIZAÇÃO DA PÁGINA SELECIONADA
+if selection == "---" or selection not in PAGES:
+    # Página Inicial Padrão
+    st.title("🚀 Bem-vindo ao Seu Web App de Produtividade!")
+    st.markdown("Use o menu lateral para navegar entre as funcionalidades de **Tarefas**, **Agendas** e **Anotações**.")
+    st.write("Status do Projeto: Estrutura base pronta.")
+else:
+    # Chama a função correspondente à seleção
+    PAGES[selection]()
+    
