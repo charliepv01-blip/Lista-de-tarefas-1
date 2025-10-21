@@ -12,7 +12,7 @@ from datetime import date
 def init_connection():
     try:
         # Credenciais lidas do secrets.toml (local) ou Secrets (Streamlit Cloud)
-        url: str = st.secrets["supabase"]["url"]
+        url: str = st.secrets["supabase"] "https://bochkjykezvrlbbivzgv.supabase.co"
         key: str = st.secrets["supabase"]["key"]
         
         supabase: Client = create_client(url, key)
