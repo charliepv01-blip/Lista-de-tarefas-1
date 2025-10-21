@@ -13,7 +13,7 @@ def init_connection():
     try:
         # Credenciais lidas do secrets.toml (local) ou Secrets (Streamlit Cloud)
         url: str = st.secrets["supabase"]["https://jiuacegblmqcpwiwowds.supabase.co"]
-        key: str = st.secrets["supabase"]["key"]
+        key: str = st.secrets["supabase"]["sb_publishable_Q5_f3mZME4y_7gMxs1IoBA_u1WImXiR"]
         
         supabase: Client = create_client(url, key)
         return supabase
