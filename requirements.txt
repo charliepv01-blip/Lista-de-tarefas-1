@@ -1,0 +1,6 @@
+# requirements.txt
+
+streamlit
+supabase
+pandas
+psycopg2-binary
