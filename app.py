@@ -29,13 +29,19 @@ supabase = init_connection()
 # --- FUNÇÕES DE PERSISTÊNCIA (CRUD) PARA TAREFAS ---
 
 # 1. Leitura de Tarefas (excluindo as apagadas)
-@st.cache_data(ttl=60) # Cache de 60 segundos para evitar sobrecarga no banco
+@st.cache_data(ttl=60) 
 def get_tarefas():
     if supabase is None: return pd.DataFrame()
     try:
-        # Busca tarefas que não foram marcadas como apagadas
+        # 1. Busca os dados no Supabase
         res = supabase.table("tarefas").select("*").eq("is_deleted", False).order("data_vencimento", desc=False).execute()
-        return pd.DataFrame(res.data)
+        
+        tarefas_df = pd.DataFrame(res.data)
+
+        # 2. *** FIX DE CAPITALIZAÇÃO OBRIGATÓRIO AQUI ***
+        tarefas_df.columns = tarefas_df.columns.str.lower()
+
+        return tarefas_df # Retorna o DataFrame tratado
     except Exception as e:
         st.error(f"Erro ao buscar tarefas: {e}")
         return pd.DataFrame()
